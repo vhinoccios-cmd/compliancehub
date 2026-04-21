@@ -1576,7 +1576,11 @@ function renderAudit(){
   let entries=[...(D.auditLog||[])];
   if(_auditFilters.region)entries=entries.filter(e=>e.region===_auditFilters.region);
   if(_auditFilters.brand)entries=entries.filter(e=>(e.brand||'').toLowerCase().includes(_auditFilters.brand.toLowerCase()));
-  if(_auditFilters.month)entries=entries.filter(e=>e.month===_auditFilters.month);
+  if(_auditFilters.month)entries=entries.filter(e=>{
+    if(!e.date)return false;
+    const d=new Date(e.date+'T00:00:00');
+    return(d.getMonth()+1)===parseInt(_auditFilters.month)&&(!_auditFilters.year||d.getFullYear()===parseInt(_auditFilters.year));
+  });
   if(_auditFilters.status)entries=entries.filter(e=>e.status===_auditFilters.status);
   if(_auditFilters.tl)entries=entries.filter(e=>(e.teamLead||'').toLowerCase().includes(_auditFilters.tl.toLowerCase()));
   if(_auditFilters.from)entries=entries.filter(e=>e.date>=_auditFilters.from);
@@ -1584,9 +1588,11 @@ function renderAudit(){
   if(_auditFilters.search){const q=_auditFilters.search.toLowerCase();entries=entries.filter(e=>(e.brand||'').toLowerCase().includes(q)||(e.issueType||'').toLowerCase().includes(q)||(e.issueDetails||'').toLowerCase().includes(q)||(e.cdm||'').toLowerCase().includes(q));}
 
   const allTLs=[...new Set((D.auditLog||[]).map(e=>e.teamLead).filter(Boolean))].sort();
-  const pending=entries.filter(e=>!e.status||e.status==='Pending (Vhino to Update)').length;
+  const pending=entries.filter(e=>e.status==='Pending'||e.status==='Pending (Vhino to Update)').length;
   const resolved=entries.filter(e=>e.status==='Resolved').length;
   const explained=entries.filter(e=>e.status==='Explained').length;
+
+  const AUDIT_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   function fsel(id,label,opts,cur,key){
     return '<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:3px">'+label+'</div>'
@@ -1595,102 +1601,195 @@ function renderAudit(){
       +'</select></div>';
   }
 
+  const currentYear=new Date().getFullYear();
+  const yearOpts=[currentYear-1,currentYear,currentYear+1].map(String);
+
   const filterBar='<div class="audit-filters">'
     +'<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:3px">Search</div>'
-      +'<input type="text" placeholder="Brand, issue, CDM..." value="'+(_auditFilters.search||'')+'" oninput="_auditFilters.search=this.value;renderAudit()" class="audit-search-input"/></div>'
+    +'<input type="text" placeholder="Brand, issue, CDM..." value="'+(_auditFilters.search||'')+'" oninput="_auditFilters.search=this.value;renderAudit()" class="audit-search-input"/></div>'
     +fsel('r','Region',['PH','SG','MY','TH','VN','ID'],_auditFilters.region,'region')
-    +fsel('m','Month',AUDIT_MONTHS,_auditFilters.month,'month')
+    +fsel('m','Month',AUDIT_MONTHS.map((_,i)=>String(i+1)),_auditFilters.month,'month')
+    +fsel('y','Year',yearOpts,_auditFilters.year||String(currentYear),'year')
     +fsel('s','Status',AUDIT_STATUSES,_auditFilters.status,'status')
     +'<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:3px">Team Lead</div>'
-      +'<select class="audit-filter-sel" onchange="_auditFilters.tl=this.value;renderAudit()"><option value="">All</option>'
-      +allTLs.map(function(t){return'<option value="'+t+'"'+(_auditFilters.tl===t?' selected':'')+'>'+t+'</option>';}).join('')
-      +'</select></div>'
+    +'<select class="audit-filter-sel" onchange="_auditFilters.tl=this.value;renderAudit()"><option value="">All</option>'
+    +allTLs.map(function(t){return'<option value="'+t+'"'+(_auditFilters.tl===t?' selected':'')+'>'+t+'</option>';}).join('')
+    +'</select></div>'
     +'<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:3px">From</div>'
-      +'<input type="date" value="'+(_auditFilters.from||'')+'" onchange="_auditFilters.from=this.value;renderAudit()" class="audit-date-input"/></div>'
+    +'<input type="date" value="'+(_auditFilters.from||'')+'" onchange="_auditFilters.from=this.value;renderAudit()" class="audit-date-input"/></div>'
     +'<div><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:3px">To</div>'
-      +'<input type="date" value="'+(_auditFilters.to||'')+'" onchange="_auditFilters.to=this.value;renderAudit()" class="audit-date-input"/></div>'
-    +'<div style="display:flex;align-items:flex-end"><button class="btn sm" onclick="Object.keys(_auditFilters).forEach(function(k){_auditFilters[k]=\'\';});renderAudit()">Clear</button></div>'
+    +'<input type="date" value="'+(_auditFilters.to||'')+'" onchange="_auditFilters.to=this.value;renderAudit()" class="audit-date-input"/></div>'
+    +'<div style="display:flex;align-items:flex-end;gap:6px"><button class="btn sm" onclick="Object.keys(_auditFilters).forEach(function(k){_auditFilters[k]=\'\';});renderAudit()">Clear</button></div>'
     +'<div style="display:flex;align-items:flex-end;margin-left:auto"><button class="btn sm" onclick="exportAudit()">Export Excel</button></div>'
-  +'</div>';
+    +'</div>';
 
   const memberOpts=D.members.filter(function(m){return m.approved;}).map(function(m){return'<option value="'+m.name+'">'+m.name+'</option>';}).join('');
   const tlOpts=D.members.filter(function(m){return m.approved&&['Team Leader','Manager','HOD'].includes(m.role);}).map(function(m){return'<option value="'+m.name+'">'+m.name+'</option>';}).join('');
 
   const tableRows=entries.map(function(e){return buildAuditRow(e,memberOpts,tlOpts);}).join('');
 
-  el.innerHTML=''
-    +'<div class="page-header">'
-      +'<div class="page-title">Audit Log <span style="font-size:13px;color:var(--text3);font-weight:400">('+entries.length+(entries.length!==D.auditLog.length?' of '+D.auditLog.length:'')+' entries)</span></div>'
-      +(CU.isAdmin?'<button class="btn primary" onclick="_auditNewRow=!_auditNewRow;renderAudit()">+ Log Finding</button>':'')
+  el.innerHTML=
+    '<div class="page-header">'
+    +'<div class="page-title">Audit Log <span style="font-size:13px;color:var(--text3);font-weight:400">('+entries.length+(entries.length!==D.auditLog.length?' of '+D.auditLog.length+':')+' entries)</span></div>'
+    +'<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+    +(CU.isAdmin?'<button class="btn primary" onclick="_auditNewRow=!_auditNewRow;renderAudit()">+ Log Finding</button>':'')
+    +(CU.isAdmin?'<button class="btn success" onclick="openAuditUpload()">⬆ Upload Excel</button>':'')
+    +'</div>'
     +'</div>'
     +'<div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">'
-      +'<div style="background:var(--red-light);border:1px solid var(--red-mid);border-radius:var(--radius);padding:8px 14px;display:flex;align-items:center;gap:8px">'
-        +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--red)">Pending</span>'
-        +'<span style="font-size:20px;font-weight:800;color:var(--red)">'+pending+'</span></div>'
-      +'<div style="background:var(--green-light);border:1px solid var(--green-mid);border-radius:var(--radius);padding:8px 14px;display:flex;align-items:center;gap:8px">'
-        +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--green)">Resolved</span>'
-        +'<span style="font-size:20px;font-weight:800;color:var(--green)">'+resolved+'</span></div>'
-      +'<div style="background:var(--blue-light);border:1px solid var(--blue-mid);border-radius:var(--radius);padding:8px 14px;display:flex;align-items:center;gap:8px">'
-        +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--blue)">Explained</span>'
-        +'<span style="font-size:20px;font-weight:800;color:var(--blue)">'+explained+'</span></div>'
+    +'<div style="background:var(--red-light);border:1px solid var(--red-mid);border-radius:var(--radius);padding:8px 14px;display:flex;align-items:center;gap:8px">'
+    +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--red)">Pending</span>'
+    +'<span style="font-size:20px;font-weight:800;color:var(--red)">'+pending+'</span></div>'
+    +'<div style="background:var(--green-light);border:1px solid var(--green-mid);border-radius:var(--radius);padding:8px 14px;display:flex;align-items:center;gap:8px">'
+    +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--green)">Resolved</span>'
+    +'<span style="font-size:20px;font-weight:800;color:var(--green)">'+resolved+'</span></div>'
+    +'<div style="background:var(--blue-light);border:1px solid var(--blue-mid);border-radius:var(--radius);padding:8px 14px;display:flex;align-items:center;gap:8px">'
+    +'<span style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--blue)">Explained</span>'
+    +'<span style="font-size:20px;font-weight:800;color:var(--blue)">'+explained+'</span></div>'
     +'</div>'
     +filterBar
     +'<div style="overflow:auto;max-height:calc(100vh - 340px);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow)">'
-      +'<table class="audit-table">'
-        +'<thead>'
-          +'<tr>'
-            +'<th style="min-width:30px">#</th>'
-            +'<th style="min-width:70px">Month</th>'
-            +'<th style="min-width:95px">Date</th>'
-            +'<th style="min-width:50px">Region</th>'
-            +'<th style="min-width:120px">Brand</th>'
-            +'<th style="min-width:80px">Platform</th>'
-            +'<th style="min-width:140px">CDM</th>'
-            +'<th style="min-width:140px">Team Lead</th>'
-            +'<th style="min-width:70px">Auditor</th>'
-            +'<th style="min-width:120px">Issue Type</th>'
-            +'<th style="min-width:200px">Issue Details</th>'
-            +'<th style="min-width:80px">Screenshot</th>'
-            +'<th style="min-width:160px">Status</th>'
-            +'<th style="min-width:160px">Gov\'t Remarks</th>'
-            +'<th style="min-width:180px;background:#fffde7">Root Cause</th>'
-            +'<th style="min-width:180px;background:#fffde7">What Was Done</th>'
-            +'<th style="min-width:180px;background:#fffde7">Preventive Action</th>'
-            +'<th style="min-width:90px;background:#fffde7">Date Fixed</th>'
-          +'</tr>'
-        +'</thead>'
-        +'<tbody>'
-          +(_auditNewRow?buildAuditNewRow():'')
-          +(tableRows||'<tr><td colspan="18" class="empty-state" style="padding:32px">No entries yet. Click "+ Log Finding" to start.</td></tr>')
-        +'</tbody>'
-      +'</table>'
+    +'<table class="audit-table">'
+    +'<thead>'
+    +'<tr>'
+    +'<th style="min-width:30px">#</th>'
+    +'<th style="min-width:95px">Date</th>'
+    +'<th style="min-width:50px">Region</th>'
+    +'<th style="min-width:120px">Brand</th>'
+    +'<th style="min-width:80px">Platform</th>'
+    +'<th style="min-width:140px">CDM</th>'
+    +'<th style="min-width:140px">Team Lead</th>'
+    +'<th style="min-width:120px">Issue Type</th>'
+    +'<th style="min-width:200px">Issue Details</th>'
+    +'<th style="min-width:80px">Screenshot</th>'
+    +'<th style="min-width:160px">Status</th>'
+    +'<th style="min-width:180px;background:#fffde7">Root Cause</th>'
+    +'<th style="min-width:180px;background:#fffde7">What Was Done</th>'
+    +'<th style="min-width:180px;background:#fffde7">Preventive Action</th>'
+    +'<th style="min-width:90px;background:#fffde7">Date Fixed</th>'
+    +(CU.isAdmin?'<th style="min-width:70px">Action</th>':'')
+    +'</tr>'
+    +'</thead>'
+    +'<tbody>'
+    +(_auditNewRow?buildAuditNewRow():'')
+    +(tableRows||'<tr><td colspan="'+(CU.isAdmin?16:15)+'" class="empty-state" style="padding:32px">No entries yet. Click "+ Log Finding" to start.</td></tr>')
+    +'</tbody>'
+    +'</table>'
     +'</div>';
 }
 
 function buildAuditRow(e,memberOpts,tlOpts){
   const isAdmin=CU.isAdmin;
-  const isTagged=(e.taggedMembers||[]).includes(CU.username);
-  const canMember=isTagged&&!isAdmin;
-  const idx=(D.auditLog||[]).findIndex(function(x){return x._key===e._key;})+1;
+  const isMember=!isAdmin;
+  const st=e.status||'';
+  const rowCls=st==='Resolved'?'fixed':st==='Pending'||st==='Pending (Vhino to Update)'?'pending':'has-issue';
+  const stCls=st==='Resolved'?'ast-resolved':st==='Pending'||st==='Pending (Vhino to Update)'?'ast-pending':st==='Explained'?'ast-explained':'ast-no-action';
+  const idx=D.auditLog.indexOf(e)+1;
+  const ssHtml=e.screenshot?'<a href="'+e.screenshot+'" target="_blank" style="color:var(--blue);font-size:11px">View</a>':'—';
 
-  function aCell(field,val,type,opts){
-    if(!isAdmin)return'<td style="font-size:12px">'+(val||'—')+'</td>';
-    if(type==='select'){
-      return'<td><select class="audit-cell-select" onchange="auditUpdate(\''+e._key+'\',\''+field+'\',this.value)">'
-        +opts.map(function(o){return'<option value="'+o+'"'+(o===val?' selected':'')+'>'+o+'</option>';}).join('')
-        +'</select></td>';
+  // Admin-only delete button
+  const delBtn=isAdmin?'<td style="text-align:center"><button class="btn sm del" onclick="deleteAuditEntry(\''+e._key+'\')" title="Delete entry">🗑</button></td>':'';
+
+  return '<tr class="'+rowCls+'">'
+    +'<td style="color:var(--text4);font-size:11px">'+idx+'</td>'
+    +'<td>'+( e.date||'—')+'</td>'
+    +'<td>'+( e.region||'—')+'</td>'
+    +'<td style="font-weight:500">'+( e.brand||'—')+'</td>'
+    +'<td>'+( e.platform||'—')+'</td>'
+    +'<td>'+( e.cdm||'—')+'</td>'
+    +'<td>'+( e.teamLead||'—')+'</td>'
+    +'<td>'+( e.issueType||'—')+'</td>'
+    +'<td style="max-width:200px;white-space:pre-wrap">'+( e.issueDetails||'—')+'</td>'
+    +'<td>'+ssHtml+'</td>'
+    +'<td><span class="'+stCls+'">'+( e.status||'Pending')+'</span></td>'
+    // Member-editable columns (K-N)
+    +'<td style="background:#fffde7"><input class="audit-cell-edit" value="'+(e.rootCause||'')+'" onchange="saveAuditField(\''+e._key+'\',\'rootCause\',this.value)" placeholder="Root cause..."/></td>'
+    +'<td style="background:#fffde7"><input class="audit-cell-edit" value="'+(e.whatWasDone||'')+'" onchange="saveAuditField(\''+e._key+'\',\'whatWasDone\',this.value)" placeholder="What was done..."/></td>'
+    +'<td style="background:#fffde7"><input class="audit-cell-edit" value="'+(e.preventiveAction||'')+'" onchange="saveAuditField(\''+e._key+'\',\'preventiveAction\',this.value)" placeholder="Preventive action..."/></td>'
+    +'<td style="background:#fffde7"><input class="audit-cell-edit" type="date" value="'+(e.dateFixed||'')+'" onchange="saveAuditField(\''+e._key+'\',\'dateFixed\',this.value)"/></td>'
+    +delBtn
+    +'</tr>';
+}e="text" class="audit-cell-edit" style="background:transparent" value="'+(val||'')+'" placeholder="—" onchange="auditUpdate(\''+e._key+'\',\''+field+'\',this.value)"/></td>';
+  }
+async function saveAuditField(key,field,value){
+  await fbUpd('auditLog/'+key,{[field]:value});
+}
+
+async function deleteAuditEntry(key){
+  if(!CU.isAdmin)return;
+  if(!confirm('Delete this entry? This cannot be undone.'))return;
+  await fbDel('auditLog/'+key);
+  toast('Entry deleted.');
+}
+
+function openAuditUpload(){
+  document.getElementById('mlt-body').innerHTML=
+    '<div style="margin-bottom:10px;font-size:13px;color:var(--text2)">Upload your daily Excel audit log. Columns A–J will be imported. Duplicates are kept as-is.</div>'
+    +'<input type="file" id="audit-upload-file" accept=".xlsx,.xls" style="margin-bottom:12px"/>'
+    +'<div class="form-actions">'
+    +'<button class="btn primary" onclick="processAuditUpload()">Import</button>'
+    +'<button class="btn" onclick="closeModal(\'modal-lt-upload\')">Cancel</button>'
+    +'</div>'
+    +'<div id="audit-upload-msg" style="margin-top:10px;font-size:12px"></div>';
+  document.getElementById('mlt-body').previousElementSibling.textContent='Upload Audit Log Excel';
+  openModal('modal-lt-upload');
+}
+
+async function processAuditUpload(){
+  const file=document.getElementById('audit-upload-file')?.files[0];
+  const msgEl=document.getElementById('audit-upload-msg');
+  if(!file){msgEl.innerHTML='<span style="color:var(--red)">Please select a file.</span>';return;}
+  msgEl.innerHTML='<span style="color:var(--text3)">Reading file...</span>';
+  const reader=new FileReader();
+  reader.onload=async function(ev){
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      // Skip header rows (first 2 rows are section label + column headers)
+      const dataRows=rows.slice(2).filter(r=>r.some(c=>c!==null&&c!==undefined&&String(c).trim()!==''));
+      if(!dataRows.length){msgEl.innerHTML='<span style="color:var(--red)">No data rows found.</span>';return;}
+      let count=0;
+      for(const row of dataRows){
+        // A=0,B=1,C=2,D=3,E=4,F=5,G=6,H=7,I=8,J=9
+        const rawDate=row[0];
+        let dateStr='';
+        if(rawDate instanceof Date){
+          const y=rawDate.getFullYear(),m=String(rawDate.getMonth()+1).padStart(2,'0'),d=String(rawDate.getDate()).padStart(2,'0');
+          dateStr=y+'-'+m+'-'+d;
+        } else if(rawDate){
+          // Try to parse MM/DD/YYYY or YYYY-MM-DD
+          const s=String(rawDate).trim();
+          if(s.match(/^\d{4}-\d{2}-\d{2}$/))dateStr=s;
+          else if(s.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)){const p=s.split('/');dateStr=p[2]+'-'+p[0].padStart(2,'0')+'-'+p[1].padStart(2,'0');}
+          else dateStr=s;
+        }
+        const entry={
+          date:dateStr,
+          region:String(row[1]||'').trim(),
+          brand:String(row[2]||'').trim(),
+          platform:String(row[3]||'').trim(),
+          cdm:String(row[4]||'').trim(),
+          teamLead:String(row[5]||'').trim(),
+          issueType:String(row[6]||'').trim(),
+          issueDetails:String(row[7]||'').trim(),
+          screenshot:String(row[8]||'').trim(),
+          status:String(row[9]||'Pending').trim()||'Pending',
+          rootCause:'',whatWasDone:'',preventiveAction:'',dateFixed:'',
+          ts:Date.now(),loggedBy:CU.name,source:'excel_upload'
+        };
+        if(!entry.brand&&!entry.cdm&&!entry.issueDetails)continue;
+        await fbPush('auditLog',entry);
+        count++;
+      }
+      msgEl.innerHTML='<span style="color:var(--green)">✓ '+count+' entries imported successfully!</span>';
+      setTimeout(()=>closeModal('modal-lt-upload'),1800);
+    }catch(err){
+      msgEl.innerHTML='<span style="color:var(--red)">Error reading file: '+err.message+'</span>';
     }
-    if(type==='date')return'<td><input type="date" class="audit-cell-edit" value="'+(val||'')+'" onchange="auditUpdate(\''+e._key+'\',\''+field+'\',this.value)"/></td>';
-    return'<td><input type="text" class="audit-cell-edit" value="'+(val||'')+'" placeholder="—" onchange="auditUpdate(\''+e._key+'\',\''+field+'\',this.value)"/></td>';
-  }
-  function mCell(field,val,type){
-    const editable=canMember||isAdmin;
-    const bg='background:#fffde7;';
-    if(!editable)return'<td style="'+bg+'font-size:12px">'+(val||'—')+'</td>';
-    if(type==='date')return'<td style="'+bg+'"><input type="date" class="audit-cell-edit" style="background:transparent" value="'+(val||'')+'" onchange="auditUpdate(\''+e._key+'\',\''+field+'\',this.value)"/></td>';
-    return'<td style="'+bg+'"><input type="text" class="audit-cell-edit" style="background:transparent" value="'+(val||'')+'" placeholder="—" onchange="auditUpdate(\''+e._key+'\',\''+field+'\',this.value)"/></td>';
-  }
-
+  };
+  reader.readAsArrayBuffer(file);
+}
   const statusClass=getAuditStatusClass(e.status);
   const statusCell=isAdmin
     ?'<td><select class="audit-cell-select '+statusClass+'" onchange="auditUpdate(\''+e._key+'\',\'status\',this.value)">'
@@ -1768,7 +1867,6 @@ async function saveAuditEntry(){
   const cdmMember=D.members.find(function(m){return m.name===cdmName;});
   const taggedMembers=cdmMember?[cdmMember.username]:[];
   const entry={
-    month:document.getElementById('an-month')?.value||'',
     date:document.getElementById('an-date')?.value||ds(now()),
     region:document.getElementById('an-region')?.value||'',
     brand,platform:document.getElementById('an-platform')?.value||'',
@@ -1778,7 +1876,6 @@ async function saveAuditEntry(){
     issueDetails:document.getElementById('an-details')?.value||'',
     screenshot:document.getElementById('an-ss')?.value||'',
     status:document.getElementById('an-status')?.value||'Pending (Vhino to Update)',
-    govRemarks:document.getElementById('an-remarks')?.value||'',
     taggedMembers,rootCause:'',whatWasDone:'',preventiveAction:'',dateFixed:'',
     ts:Date.now(),loggedBy:CU.name
   };
