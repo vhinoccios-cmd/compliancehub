@@ -1709,7 +1709,6 @@ function buildAuditRow(e,memberOpts,tlOpts){
     +'<td style="background:#fffde7"><input class="audit-cell-edit" type="date" value="'+(e.dateFixed||'')+'" onchange="saveAuditField(\''+e._key+'\',\'dateFixed\',this.value)"/></td>'
     +delBtn
     +'</tr>';
-}e="text" class="audit-cell-edit" style="background:transparent" value="'+(val||'')+'" placeholder="—" onchange="auditUpdate(\''+e._key+'\',\''+field+'\',this.value)"/></td>';
   }
 async function saveAuditField(key,field,value){
   await fbUpd('auditLog/'+key,{[field]:value});
