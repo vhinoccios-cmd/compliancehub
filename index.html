@@ -363,29 +363,43 @@ textarea.finput{resize:vertical;min-height:64px;margin-bottom:0}
 .ws-scope-tag{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;text-transform:none;letter-spacing:0}
 .ws-scope-personal{background:var(--blue-light);color:#1d4ed8;border:1px solid var(--blue-mid)}
 .ws-scope-dept{background:var(--purple-light);color:var(--purple);border:1px solid #c4b5fd}
-.ws-note-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.ws-note-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative;overflow:hidden}
-.ws-note-card:hover{border-color:var(--blue);box-shadow:0 2px 10px rgba(37,99,235,.08)}
-.ws-note-card.pinned{border-top:2px solid var(--blue)}
-.ws-note-pin{font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
-.ws-note-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
-.ws-note-body{font-size:11px;color:var(--text3);line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.ws-note-date{font-size:10px;color:var(--text4);margin-top:8px}
-.ws-note-add{border:1.5px dashed var(--border);border-radius:var(--radius-lg);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:96px;color:var(--text4);font-size:11px;background:transparent;transition:background .12s;font-family:inherit;width:100%}
-.ws-note-add:hover{background:var(--blue-light);color:var(--blue);border-color:var(--blue)}
-.ws-plus-circle{width:22px;height:22px;border:1.5px solid currentColor;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
-.ws-bulletin-list{display:flex;flex-direction:column;gap:10px}
-.ws-bc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;border-left:3px solid var(--border)}
-.ws-bc.urgent{border-left-color:var(--red)}
-.ws-bc.policy{border-left-color:var(--blue)}
-.ws-bc.announcement{border-left-color:#7c3aed}
-.ws-bc.general{border-left-color:#64748b}
-.ws-bc-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:7px}
-.ws-bc-icon{width:30px;height:30px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.ws-bc-icon.urgent{background:var(--red-light);color:var(--red)}
-.ws-bc-icon.policy{background:var(--blue-light);color:var(--blue)}
-.ws-bc-icon.announcement{background:var(--purple-light);color:var(--purple)}
-.ws-bc-icon.general{background:#f1f5f9;color:#64748b}
+
+/* ── NOTEBOOK NOTES (list style with lines) ── */
+.ws-notebook{background:#fffef7;border:1px solid #e8e4d0;border-radius:var(--radius-lg);box-shadow:2px 4px 12px rgba(0,0,0,.06),inset 0 0 0 1px rgba(255,255,255,.8);position:relative;overflow:hidden;min-height:300px}
+.ws-notebook::before{content:'';position:absolute;left:44px;top:0;bottom:0;width:1px;background:rgba(230,100,100,.25);z-index:0}
+.ws-notebook-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 10px 52px;border-bottom:2px solid #e8e4d0;background:linear-gradient(to bottom,#fff9e6,#fffef7);position:relative;z-index:1}
+.ws-notebook-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#a89060}
+.ws-note-entries{position:relative;z-index:1}
+.ws-note-line{display:flex;align-items:center;gap:0;padding:0;border-bottom:1px solid rgba(100,140,220,.18);min-height:38px;transition:background .1s;position:relative}
+.ws-note-line:hover{background:rgba(37,99,235,.03)}
+.ws-note-line-gutter{width:44px;min-width:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;height:100%}
+.ws-note-check{width:17px;height:17px;border:1.5px solid #c0b8a0;border-radius:3px;cursor:pointer;appearance:none;-webkit-appearance:none;flex-shrink:0;transition:all .15s;background:#fff;position:relative}
+.ws-note-check:checked{background:var(--green);border-color:var(--green)}
+.ws-note-check:checked::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:10px;font-weight:700}
+.ws-note-text{flex:1;padding:8px 14px 8px 10px;font-size:13px;color:var(--text);line-height:1.45;cursor:pointer;word-break:break-word}
+.ws-note-text.done-task{text-decoration:line-through;color:var(--text4);opacity:.7}
+.ws-note-entry-body{font-size:11px;color:var(--text3);padding:0 14px 6px 10px;line-height:1.5;font-style:italic}
+.ws-note-date-tag{font-size:10px;color:var(--text4);padding:4px 10px;white-space:nowrap;flex-shrink:0}
+.ws-note-pin-flag{width:5px;min-width:5px;align-self:stretch;background:var(--blue);flex-shrink:0;border-radius:0 3px 3px 0}
+.ws-note-add-line{display:flex;align-items:center;gap:0;padding:0;min-height:38px;border-bottom:1px solid rgba(100,140,220,.1)}
+.ws-note-add-line:hover .ws-note-add-hint{color:var(--blue)}
+.ws-note-add-hint{flex:1;padding:8px 14px 8px 10px;font-size:12px;color:var(--text4);cursor:pointer;font-style:italic;transition:color .15s}
+
+/* ── NOTEBOOK BULLETIN (lined paper) ── */
+.ws-bulletin-notebook{background:#f8f9ff;border:1px solid #dde4f0;border-radius:var(--radius-lg);box-shadow:2px 4px 12px rgba(0,0,0,.06);overflow:hidden;min-height:200px;position:relative}
+.ws-bulletin-notebook::before{content:'';position:absolute;left:44px;top:0;bottom:0;width:1px;background:rgba(120,100,220,.2);z-index:0}
+.ws-bulletin-nb-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 10px 52px;border-bottom:2px solid #dde4f0;background:linear-gradient(to bottom,#eef1ff,#f8f9ff);position:relative;z-index:1}
+.ws-bulletin-nb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#6b7ed4}
+.ws-bulletin-list{display:flex;flex-direction:column;gap:0;position:relative;z-index:1}
+.ws-bc{background:transparent;border:none;border-bottom:1px solid rgba(100,140,220,.18);padding:14px 16px 14px 52px;border-left:none;position:relative;transition:background .12s}
+.ws-bc:hover{background:rgba(37,99,235,.02)}
+.ws-bc::before{content:'';position:absolute;left:16px;top:50%;transform:translateY(-50%);width:14px;height:100%;max-height:40px;border-radius:3px}
+.ws-bc.urgent::before{background:var(--red-light);border:1.5px solid var(--red-mid)}
+.ws-bc.policy::before{background:var(--blue-light);border:1.5px solid var(--blue-mid)}
+.ws-bc.announcement::before{background:var(--purple-light);border:1.5px solid #c4b5fd}
+.ws-bc.general::before{background:#f1f5f9;border:1.5px solid #cbd5e1}
+.ws-bc-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:6px}
+.ws-bc-icon{display:none}
 .ws-bc-meta{flex:1;min-width:0}
 .ws-bc-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
 .ws-bc-from{font-size:10px;color:var(--text4)}
@@ -398,6 +412,31 @@ textarea.finput{resize:vertical;min-height:64px;margin-bottom:0}
 .ws-ack-bar-wrap{width:60px;height:3px;background:var(--blue-mid);border-radius:99px;overflow:hidden}
 .ws-ack-bar{height:100%;background:var(--blue);border-radius:99px}
 .ws-tag{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:700}
+
+/* ── RESPONSE STATUS collapsible ── */
+.wr-resp-collapsible-hdr{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:4px 0}
+.wr-resp-collapsible-hdr:hover .wr-resp-toggle{color:#fff}
+.wr-resp-toggle{font-size:11px;color:#93c5fd;margin-left:8px;transition:transform .2s;display:inline-block}
+.wr-resp-toggle.open{transform:rotate(180deg)}
+.wr-resp-detail{display:none;margin-top:10px}
+.wr-resp-detail.open{display:block}
+.wr-pending-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.wr-pending-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(0,0,0,.15);border-radius:var(--radius);border:1px solid rgba(255,255,255,.08)}
+.wr-responded-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(74,222,128,.06);border-radius:var(--radius);border:1px solid rgba(74,222,128,.2)}
+.wr-resp-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+
+/* Legacy kept for compat */
+.ws-note-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ws-note-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:13px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative;overflow:hidden}
+.ws-note-card:hover{border-color:var(--blue);box-shadow:0 2px 10px rgba(37,99,235,.08)}
+.ws-note-card.pinned{border-top:2px solid var(--blue)}
+.ws-note-pin{font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.ws-note-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+.ws-note-body{font-size:11px;color:var(--text3);line-height:1.55;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ws-note-date{font-size:10px;color:var(--text4);margin-top:8px}
+.ws-note-add{border:1.5px dashed var(--border);border-radius:var(--radius-lg);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:96px;color:var(--text4);font-size:11px;background:transparent;transition:background .12s;font-family:inherit;width:100%}
+.ws-note-add:hover{background:var(--blue-light);color:var(--blue);border-color:var(--blue)}
+.ws-plus-circle{width:22px;height:22px;border:1.5px solid currentColor;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1}
 .ws-tag.urgent{background:var(--red-light);color:#b91c1c}
 .ws-tag.policy{background:var(--blue-light);color:#1d4ed8}
 .ws-tag.announcement{background:var(--purple-light);color:var(--purple)}
@@ -962,15 +1001,35 @@ function renderWorkSpace(){
   const bulletins=D.wsBulletins||[];
   const pinned=notes.filter(n=>n.pinned);
   const unpinned=notes.filter(n=>!n.pinned);
+  const allNotesSorted=[...pinned,...unpinned];
   const canPost=canPostBulletin();
-  const totalMembers=(D.members||[]).filter(m=>m.approved).length+1; // +1 for admin
+  const totalMembers=(D.members||[]).filter(m=>m.approved).length+1;
 
-  function noteCard(n){
-    return `<div class="ws-note-card${n.pinned?' pinned':''}" onclick="wsOpenNote('${n._key}')">
-      ${n.pinned?'<div class="ws-note-pin">Pinned</div>':''}
-      <div class="ws-note-title">${escHtml(n.title||'Untitled')}</div>
-      <div class="ws-note-body">${escHtml(n.body||'')}</div>
-      <div class="ws-note-date">${n.updatedAt?new Date(n.updatedAt).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):'—'}</div>
+  function noteLines(n){
+    const lines=(n.body||'').split('\n').filter(l=>l.trim());
+    if(!lines.length)return `<div class="ws-note-add-line"><div style="width:5px;min-width:5px"></div><div class="ws-note-line-gutter"></div><span class="ws-note-add-hint" onclick="wsOpenNote('${n._key}')">Add items...</span></div>`;
+    return lines.map((line,idx)=>{
+      const isDone=(n.checkedLines||{})[idx];
+      return `<div class="ws-note-line">
+        ${n.pinned?`<div class="ws-note-pin-flag"></div>`:'<div style="width:5px;min-width:5px"></div>'}
+        <div class="ws-note-line-gutter">
+          <input type="checkbox" class="ws-note-check" ${isDone?'checked':''} onclick="wsToggleLine('${n._key}',${idx},this.checked)" title="Mark done"/>
+        </div>
+        <div class="ws-note-text${isDone?' done-task':''}" onclick="wsOpenNote('${n._key}')">${escHtml(line)}</div>
+        <span class="ws-note-date-tag">${idx===0&&n.updatedAt?new Date(n.updatedAt).toLocaleDateString('en-PH',{month:'short',day:'numeric'}):''}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function noteSection(n){
+    return `<div style="border-bottom:2px solid rgba(100,140,220,.12)">
+      <div class="ws-note-line" style="background:rgba(37,99,235,.03)">
+        ${n.pinned?`<div class="ws-note-pin-flag"></div>`:'<div style="width:5px;min-width:5px"></div>'}
+        <div class="ws-note-line-gutter"><span style="font-size:10px;color:var(--blue);opacity:.6">📝</span></div>
+        <div style="flex:1;padding:7px 10px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer" onclick="wsOpenNote('${n._key}')">${escHtml(n.title||'Untitled')}${n.pinned?' <span style="font-size:9px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;margin-left:4px">Pinned</span>':''}</div>
+        <button class="btn sm edit" style="margin:4px 10px 4px 0;padding:2px 8px;font-size:11px" onclick="wsOpenNote('${n._key}')">Edit</button>
+      </div>
+      ${noteLines(n)}
     </div>`;
   }
 
@@ -980,14 +1039,15 @@ function renderWorkSpace(){
     const ackCount=Object.keys(acks).length;
     const userAcked=!!acks[CU.username];
     const pct=totalMembers>0?Math.round(ackCount/totalMembers*100):0;
-    const iconMap={urgent:'!',policy:'i',announcement:'★',general:'·'};
+    const typeLabel=type.charAt(0).toUpperCase()+type.slice(1);
+    const typeColors={urgent:'var(--red)',policy:'var(--blue)',announcement:'var(--purple)',general:'#64748b'};
+    const typeLight={urgent:'var(--red-light)',policy:'var(--blue-light)',announcement:'var(--purple-light)',general:'#f1f5f9'};
     return `<div class="ws-bc ${type}">
       <div class="ws-bc-top">
-        <div class="ws-bc-icon ${type}">${iconMap[type]||'·'}</div>
         <div class="ws-bc-meta">
           <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
             <span class="ws-bc-title">${escHtml(b.title||'')}</span>
-            <span class="ws-tag ${type}">${type.charAt(0).toUpperCase()+type.slice(1)}</span>
+            <span style="font-size:9px;padding:2px 7px;border-radius:20px;font-weight:700;background:${typeLight[type]};color:${typeColors[type]}">${typeLabel}</span>
           </div>
           <div class="ws-bc-from">Posted by ${escHtml(b.postedByName||'—')} · ${b.postedAt?new Date(b.postedAt).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}):''} · Dept-wide</div>
         </div>
@@ -1015,18 +1075,25 @@ function renderWorkSpace(){
     <div class="ws-col-notes">
       <div class="ws-col-header">
         <div class="ws-col-title">
-          <i data-lucide="sticky-note" style="width:14px;height:14px;opacity:.6"></i>
+          <i data-lucide="notebook-text" style="width:14px;height:14px;opacity:.6"></i>
           Notes
           <span class="ws-scope-tag ws-scope-personal">Personal</span>
         </div>
         <button class="btn sm primary" onclick="wsNewNote()">+ New note</button>
       </div>
-      ${pinned.length?`<div style="font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Pinned</div>
-      <div class="ws-note-grid" style="margin-bottom:14px">${pinned.map(noteCard).join('')}</div>`:'' }
-      <div style="font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">${pinned.length?'All notes':'My notes'}</div>
-      <div class="ws-note-grid">
-        ${unpinned.map(noteCard).join('')}
-        <button class="ws-note-add" onclick="wsNewNote()"><div class="ws-plus-circle">+</div><span>New note</span></button>
+      <div class="ws-notebook">
+        <div class="ws-notebook-header">
+          <span class="ws-notebook-label">My Notes &amp; Tasks</span>
+          <span style="font-size:10px;color:#c8b87a">${allNotesSorted.length} note${allNotesSorted.length!==1?'s':''}</span>
+        </div>
+        <div class="ws-note-entries">
+          ${allNotesSorted.length?allNotesSorted.map(noteSection).join(''):`<div class="ws-note-add-line"><div style="width:5px;min-width:5px"></div><div class="ws-note-line-gutter"></div><span class="ws-note-add-hint" onclick="wsNewNote()">Click \"+ New note\" to get started...</span></div>`}
+          <div class="ws-note-add-line">
+            <div style="width:5px;min-width:5px"></div>
+            <div class="ws-note-line-gutter"><span style="font-size:14px;color:var(--text4)">+</span></div>
+            <span class="ws-note-add-hint" onclick="wsNewNote()">Add a new note or task list...</span>
+          </div>
+        </div>
       </div>
     </div>
     <div class="ws-col-bulletin">
@@ -1055,8 +1122,14 @@ function renderWorkSpace(){
           <button class="btn sm primary" onclick="wsPostBulletin()">Send to all</button>
         </div>
       </div>
-      <div class="ws-bulletin-list">
-        ${bulletins.length?bulletins.map(bcCard).join(''):'<div style="text-align:center;color:var(--text4);padding:32px 0;font-size:13px">No bulletins posted yet.</div>'}
+      <div class="ws-bulletin-notebook">
+        <div class="ws-bulletin-nb-header">
+          <span class="ws-bulletin-nb-label">📋 Department Bulletins</span>
+          <span style="font-size:10px;color:#8b9de8">${bulletins.length} post${bulletins.length!==1?'s':''}</span>
+        </div>
+        <div class="ws-bulletin-list">
+          ${bulletins.length?bulletins.map(bcCard).join(''):'<div style="padding:32px 52px;color:var(--text4);font-size:13px;font-style:italic">No bulletins posted yet.</div>'}
+        </div>
       </div>
     </div>
   </div>
@@ -1066,12 +1139,13 @@ function renderWorkSpace(){
     <div class="ws-note-modal">
       <button class="modal-close" onclick="wsCloseNote()">&#x2715;</button>
       <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px">
-        <input id="ws-modal-title" class="finput nb" placeholder="Note title" style="flex:1;font-weight:700;font-size:15px"/>
+        <input id="ws-modal-title" class="finput nb" placeholder="Note / task list title" style="flex:1;font-weight:700;font-size:15px"/>
         <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;color:var(--text3)">
           <input type="checkbox" id="ws-modal-pin" style="accent-color:var(--blue)"/> Pin
         </label>
       </div>
-      <textarea id="ws-modal-body" class="finput nb" rows="7" placeholder="Write your note here..." style="resize:vertical"></textarea>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Enter each item on its own line — each line becomes a checkable task</div>
+      <textarea id="ws-modal-body" class="finput nb" rows="8" placeholder="Write one item per line..." style="resize:vertical;font-family:monospace;font-size:13px;line-height:1.8"></textarea>
       <div style="display:flex;gap:8px;margin-top:12px;justify-content:space-between">
         <button class="btn sm del" id="ws-modal-del" onclick="wsDeleteNote()" style="display:none">Delete</button>
         <div style="display:flex;gap:8px;margin-left:auto">
@@ -1108,6 +1182,10 @@ async function wsDeleteNote(){
   if(!confirm('Delete this note?'))return;
   await fbDel('wsNotes/'+CU.username+'/'+_wsEditKey);
   wsCloseNote();toast('Note deleted.');
+}
+
+async function wsToggleLine(noteKey,lineIdx,checked){
+  await fbUpd('wsNotes/'+CU.username+'/'+noteKey+'/checkedLines',{[lineIdx]:checked});
 }
 
 function wsTogglePostBar(){const b=document.getElementById('ws-post-bar');if(b)b.classList.toggle('open');}
@@ -2790,10 +2868,11 @@ function buildWeeklyReportHTML(report){
   });
   const t2Rows=Object.values(cdmMap).sort((a,b)=>a.cdm.localeCompare(b.cdm)).map(r=>{
     const cells=cats.map(c=>`<td>${r.counts[c]||''}</td>`).join('');
-    const grand=Object.values(r.counts).reduce((s,v)=>s+v,0);
+    const grand=cats.reduce((s,c)=>s+(r.counts[c]||0),0); // sum only category columns for accuracy
     return`<tr><td class="left">${r.cdm}</td><td class="left" style="color:var(--text3)">${r.tl}</td>${cells}<td style="font-weight:700">${grand||''}</td></tr>`;
   }).join('');
-  const t2Totals={};cats.forEach(c=>{t2Totals[c]=t2Inc.filter(i=>(i.category||'Others')===c).length;});
+  const t2Totals={};cats.forEach(c=>{t2Totals[c]=t2Inc.filter(i=>(cats.includes(i.category)?i.category:'Others')===c).length;});
+  const t2GrandTotal=cats.reduce((s,c)=>s+(t2Totals[c]||0),0);
   const t2GrandCells=cats.map(c=>`<td style="font-weight:700">${t2Totals[c]||''}</td>`).join('');
   const t2Label=cwLabel(t2CW)+(t2CW===baseCW-1?' · incidents covered by '+cwLabel(baseCW):t2CW===baseCW?' (current, published week)':'');
   const t2DateRange=new Date(t2WD[0]+'T12:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric'})+' – '+new Date(t2WD[6]+'T12:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});
@@ -2810,7 +2889,7 @@ function buildWeeklyReportHTML(report){
       <th class="left">CDM</th><th class="left">Team Lead</th>${cats.map(c=>`<th>${c}</th>`).join('')}<th>Grand Total</th>
     </tr></thead><tbody>
       ${t2Rows||'<tr><td colspan="'+(cats.length+3)+'" style="text-align:center;padding:16px;color:var(--text4)">No incidents this week</td></tr>'}
-      <tr class="grand-row"><td class="left" colspan="2">Grand Total</td>${t2GrandCells}<td style="font-weight:700">${t2Inc.length||''}</td></tr>
+      <tr class="grand-row"><td class="left" colspan="2">Grand Total</td>${t2GrandCells}<td style="font-weight:700">${t2GrandTotal||''}</td></tr>
     </tbody></table></div></div>`;
 
   // ── TABLE 3: WoW — week pair selector ±4 ──
@@ -2826,21 +2905,29 @@ function buildWeeklyReportHTML(report){
     const rCur=t3CurInc.filter(i=>i.region===r);
     const rPrev=t3PrevInc.filter(i=>i.region===r);
     const cells=cats.map(c=>{
-      const cur=rCur.filter(i=>(i.category||'Others')===c).length;
-      const prev=rPrev.filter(i=>(i.category||'Others')===c).length;
+      const cur=rCur.filter(i=>(cats.includes(i.category)?i.category:'Others')===c).length;
+      const prev=rPrev.filter(i=>(cats.includes(i.category)?i.category:'Others')===c).length;
       const wow=cur-prev;
       const wowHtml=wow===0?'<span style="color:var(--text4)">0</span>':wow>0?`<span class="pos">+${wow}</span>`:`<span class="neg">${wow}</span>`;
       return`<td>${cur||''}</td><td>${wowHtml}</td>`;
     }).join('');
-    return`<tr><td class="left"><b>${r}</b></td>${cells}</tr>`;
+    const rowTotal=cats.reduce((s,c)=>s+rCur.filter(i=>(cats.includes(i.category)?i.category:'Others')===c).length,0);
+    const prevTotal=cats.reduce((s,c)=>s+rPrev.filter(i=>(cats.includes(i.category)?i.category:'Others')===c).length,0);
+    const rowWow=rowTotal-prevTotal;
+    const rowWowHtml=rowWow===0?'<span style="color:var(--text4)">0</span>':rowWow>0?`<span class="pos">+${rowWow}</span>`:`<span class="neg">${rowWow}</span>`;
+    return`<tr><td class="left"><b>${r}</b></td>${cells}<td style="font-weight:700">${rowTotal||''}</td><td>${rowWowHtml}</td></tr>`;
   }).join('');
   const t3GtCells=cats.map(c=>{
-    const cur=t3CurInc.filter(i=>(i.category||'Others')===c).length;
-    const prev=t3PrevInc.filter(i=>(i.category||'Others')===c).length;
+    const cur=t3CurInc.filter(i=>(cats.includes(i.category)?i.category:'Others')===c).length;
+    const prev=t3PrevInc.filter(i=>(cats.includes(i.category)?i.category:'Others')===c).length;
     const wow=cur-prev;
     const wowHtml=wow===0?'<span style="color:var(--text4)">0</span>':wow>0?`<span class="pos">+${wow}</span>`:`<span class="neg">${wow}</span>`;
     return`<td>${cur||''}</td><td>${wowHtml}</td>`;
   }).join('');
+  const t3GrandCur=cats.reduce((s,c)=>s+t3CurInc.filter(i=>(cats.includes(i.category)?i.category:'Others')===c).length,0);
+  const t3GrandPrev=cats.reduce((s,c)=>s+t3PrevInc.filter(i=>(cats.includes(i.category)?i.category:'Others')===c).length,0);
+  const t3GrandWow=t3GrandCur-t3GrandPrev;
+  const t3GrandWowHtml=t3GrandWow===0?'<span style="color:var(--text4)">0</span>':t3GrandWow>0?`<span class="pos">+${t3GrandWow}</span>`:`<span class="neg">${t3GrandWow}</span>`;
   const t3Header=cats.map(c=>`<th colspan="2">${c}</th>`).join('');
   const t3Sub=cats.map(()=>`<th>${cwLabel(t3CW)}</th><th>WoW</th>`).join('');
   const t3IsCurrent=t3CW===baseCW;
@@ -2854,11 +2941,11 @@ function buildWeeklyReportHTML(report){
       </div>
     </div>
     <div style="overflow-x:auto;padding:0"><table class="wr-table"><thead>
-      <tr><th class="left">Region</th>${t3Header}</tr>
-      <tr><th class="left"></th>${t3Sub}</tr>
+      <tr><th class="left">Region</th>${t3Header}<th colspan="2">Total</th></tr>
+      <tr><th class="left"></th>${t3Sub}<th>${cwLabel(t3CW)}</th><th>WoW</th></tr>
     </thead><tbody>
-      ${t3Rows||'<tr><td colspan="'+(cats.length*2+1)+'" style="text-align:center;padding:16px;color:var(--text4)">No data</td></tr>'}
-      <tr class="grand-row"><td class="left">Grand Total</td>${t3GtCells}</tr>
+      ${t3Rows||'<tr><td colspan="'+(cats.length*2+3)+'" style="text-align:center;padding:16px;color:var(--text4)">No data</td></tr>'}
+      <tr class="grand-row"><td class="left">Grand Total</td>${t3GtCells}<td style="font-weight:700">${t3GrandCur||''}</td><td>${t3GrandWowHtml}</td></tr>
     </tbody></table></div></div>`;
 
   // ── RESPONSE TRACKER — compact avatar grid, no textarea ──
@@ -2931,22 +3018,56 @@ function buildWeeklyReportHTML(report){
 
   const responseSection=`<div class="wr-card">
     <div class="wr-card-hdr" style="align-items:center">
-      <span class="wr-card-title">✅ Response Status — CW${baseCW} report &nbsp;<span style="font-size:10px;font-weight:400;color:#93c5fd">covering CW${coveredCW} incidents</span>
-        &nbsp;·&nbsp;
-        <span class="tt-wrap" style="display:inline-block;cursor:pointer">
-          <span style="color:#4ade80;font-weight:700;border-bottom:1px dashed #4ade80">${respondedCount} responded</span>
-          <div class="tt-box" style="white-space:pre-line;min-width:240px">${respondedTooltip}</div>
+      <div class="wr-resp-collapsible-hdr" style="flex:1;display:flex;align-items:center" onclick="wrToggleRespDetail('${rKey}')">
+        <span class="wr-card-title">✅ Response Status — CW${baseCW} report &nbsp;<span style="font-size:10px;font-weight:400;color:#93c5fd">covering CW${coveredCW} incidents</span></span>
+        <span style="margin-left:12px;display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span style="color:#4ade80;font-weight:700;font-size:11px">${respondedCount} responded</span>
+          <span style="color:#93c5fd;font-size:11px">/</span>
+          <span style="color:#fca5a5;font-weight:700;font-size:11px">${pendingLeads.length} pending</span>
+          <span style="color:#93c5fd;font-size:11px">of ${teamLeads.length}${teamLeads.length===0?' (no leads with incidents)':''}</span>
+          <span class="wr-resp-toggle" id="wr-resp-arrow-${rKey}">▼</span>
         </span>
-        <span style="color:#93c5fd;font-weight:400"> / ${teamLeads.length}${teamLeads.length===0?' (no leads with incidents this week)':''} ·</span>
-        <span class="tt-wrap" style="display:inline-block;cursor:pointer;margin-left:4px">
-          <span style="color:#fca5a5;font-weight:700;border-bottom:1px dashed #fca5a5">${pendingLeads.length} pending</span>
-          <div class="tt-box" style="white-space:pre-line;min-width:220px">${pendingTooltip}</div>
-        </span>
-      </span>
+      </div>
       ${remindBtn}
     </div>
     ${escNotice}
-    ${mySubmitBox}
+    <div class="wr-resp-detail" id="wr-resp-detail-${rKey}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px">
+        ${pendingLeads.length?`<div>
+          <div class="wr-resp-section-label" style="color:#fca5a5">⏳ Pending (${pendingLeads.length})</div>
+          <div class="wr-pending-list">
+            ${pendingLeads.map(tl=>`<div class="wr-pending-item">
+              <div class="av" style="background:rgba(255,255,255,.1);color:#e2e8f0;font-size:9px;width:24px;height:24px">${ini(tl.name)}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:12px;font-weight:600;color:#e2e8f0">${escHtml(tl.name)}</div>
+                <div style="font-size:10px;color:#93c5fd">${escHtml(tl.role||'')}</div>
+              </div>
+              <span style="font-size:10px;color:#fca5a5;background:rgba(220,38,38,.15);padding:2px 8px;border-radius:20px;border:1px solid rgba(220,38,38,.3)">Pending</span>
+            </div>`).join('')}
+          </div>
+        </div>`:'<div><div class="wr-resp-section-label" style="color:#4ade80">⏳ Pending</div><div style="color:#4ade80;font-size:12px;padding:12px 0">All leads have responded! 🎉</div></div>'}
+        ${respondedLeads.length?`<div>
+          <div class="wr-resp-section-label" style="color:#4ade80">✓ Responded (${respondedLeads.length})</div>
+          <div class="wr-pending-list">
+            ${respondedLeads.map(tl=>{
+              const resp=responses[tl.username];
+              const isLate=deadlineTs&&resp.ts>deadlineTs;
+              const ts=new Date(resp.ts).toLocaleDateString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+              return `<div class="wr-responded-item">
+                <div class="av" style="background:rgba(74,222,128,.15);color:#4ade80;font-size:9px;width:24px;height:24px">${ini(tl.name)}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:12px;font-weight:600;color:#e2e8f0">${escHtml(tl.name)}</div>
+                  <div style="font-size:10px;color:#86efac">${ts}${isLate?' · <span style="color:var(--orange)">⚠️ Late</span>':''}</div>
+                  ${resp.text?`<div style="font-size:11px;color:#93c5fd;margin-top:3px;font-style:italic;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:220px">"${escHtml(resp.text)}"</div>`:''}
+                </div>
+                ${(CU.isAdmin||(isLead()&&tl.username===CU.username))?`<button class="btn sm" style="font-size:10px;padding:2px 7px;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#e2e8f0" onclick="tlEditResponse('${rKey}','${tl.username}')">Edit</button>`:''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`:''}
+      </div>
+      ${mySubmitBox}
+    </div>
   </div>`;
 
   return table1+table2+table3+responseSection;
@@ -2986,6 +3107,14 @@ async function tlEditResponse(reportKey,tlUsername){
   if(text===null)return;
   await fbUpd('weeklyReports/'+reportKey+'/tlResponses/'+tlUsername,{text:text.trim(),ts:Date.now(),by:CU.name});
   toast('Response updated');
+}
+
+function wrToggleRespDetail(rKey){
+  const panel=document.getElementById('wr-resp-detail-'+rKey);
+  const arrow=document.getElementById('wr-resp-arrow-'+rKey);
+  if(!panel)return;
+  const isOpen=panel.classList.toggle('open');
+  if(arrow)arrow.style.transform=isOpen?'rotate(180deg)':'rotate(0deg)';
 }
 
 async function remindPendingLeads(reportKey){
