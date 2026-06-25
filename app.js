@@ -7178,6 +7178,12 @@ function buildFRTable(trackerKey,sheetKey,sheet){
         }
       }
     }
+    // Skip fully-blank "ghost" columns — these are leftover remnants from earlier delete attempts
+    // (before the column-delete fix) that have no header text and no parseable date at all.
+    // Rendering them produces a headerless column that visually misaligns everything after it
+    // (including the completion % footer) and makes the freeze boundary look wrong.
+    const hasAnyLabel=topLabel||subLabels.some(function(s){return s;});
+    if(!hasAnyLabel&&!parsedDate)continue;
     dateColGroups.push({ci,topLabel,subLabels,parsedDate,isActive:false,isPast:false,isFuture:false});
   }
 
@@ -8417,14 +8423,18 @@ function frManageDates(key){
     dateCols.push({idx:i,label:String(row0[i]!=null?row0[i]:'').trim(),subLabels:colSubLabels});
   }
   const numSubRows=headerRows.length-1;
-  const dateList=dateCols.map(dc=>`
-    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px">
+  const dateList=dateCols.map(dc=>{
+    const isBlank=!dc.label&&!dc.subLabels.some(s=>s);
+    return `
+    <div style="background:${isBlank?'#fff7ed':'var(--bg)'};border:1px solid ${isBlank?'var(--orange)':'var(--border)'};border-radius:var(--radius);padding:8px 10px;margin-bottom:6px">
+      ${isBlank?'<div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:4px">⚠ Blank column (no header text) — hidden from the table already. Click ✕ to remove it for good.</div>':''}
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
         <input class="finput nb" style="flex:1;font-size:12px;font-weight:600" value="${escHtml(dc.label)}" data-colidx="${dc.idx}" data-rowoffset="0" placeholder="Top label e.g. Income: 23 Dec - 29 Dec"/>
         <button onclick="this.closest('div.date-entry-wrap').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 4px">✕</button>
       </div>
       ${dc.subLabels.map((sl,ri)=>`<input class="finput nb" style="width:100%;font-size:11px;margin-bottom:3px" value="${escHtml(sl)}" data-colidx="${dc.idx}" data-rowoffset="${ri+1}" placeholder="Sub-row ${ri+1} e.g. SW: 24 Dec - 30 Dec"/>`).join('')}
-    </div>`).join('').replace(/<div style="background/g,'<div class="date-entry-wrap" style="background');
+    </div>`;
+  }).join('').replace(/<div style="background/g,'<div class="date-entry-wrap" style="background');
   const subRowControls=Array.from({length:numSubRows},(_, ri)=>`<span style="font-size:11px;color:var(--text3)">Sub-row ${ri+1} label</span>`).join(' | ');
   document.getElementById('mlt-body').innerHTML=`
     <div style="margin-bottom:10px;font-size:13px;color:var(--text3)">
