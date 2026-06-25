@@ -5476,17 +5476,17 @@ function renderLiveTrackers(){
       +'</div>';
 
   el.innerHTML=''
-    +'<div class="page-header">'
+    +'<div class="page-header" style="margin-bottom:12px;padding-bottom:12px">'
       +'<div><div class="page-title">Live Trackers</div><div class="page-subtitle">Real-time AO and compliance tracker sheets</div></div>'
       +(ltCanManage?'<button class="btn primary" onclick="openAddTracker()">+ Upload Tracker</button>':'<span style="font-size:12px;color:var(--text3);padding:6px 10px;background:var(--blue-light);border-radius:var(--radius)">View &amp; edit your rows only</span>')
     +'</div>'
-    +'<div style="display:flex;flex-direction:column;gap:10px">'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
       +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden">'
-        +'<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:#f8fafc;flex-wrap:wrap">'
+        +'<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);background:#f8fafc;flex-wrap:wrap">'
           +'<div style="font-size:13px;font-weight:700;white-space:nowrap">'+(CU.isAdmin?'My Trackers':'Trackers')+' ('+trackers.length+')</div>'
-          +'<input id="lt-search-val" placeholder="Search trackers..." oninput="renderLiveTrackers()" style="flex:1;min-width:160px;max-width:280px;padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;background:var(--surface)" value="'+q+'">'
+          +'<input id="lt-search-val" placeholder="Search trackers..." oninput="renderLiveTrackers()" style="flex:1;min-width:160px;max-width:280px;padding:5px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;background:var(--surface)" value="'+q+'">'
         +'</div>'
-        +'<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;overflow-x:auto">'+sideHtml+'</div>'
+        +'<div style="display:flex;align-items:center;gap:8px;padding:6px 12px;overflow-x:auto">'+sideHtml+'</div>'
       +'</div>'
       +'<div style="display:flex;flex-direction:column;min-width:0">'
         +toolbarHtml
@@ -7141,10 +7141,11 @@ function buildFRTable(trackerKey,sheetKey,sheet){
     'TikTok':['Region','Platform','Account Status','Synagie Merchant ID','Brand / Store Name','Exec','Team Lead'],
   };
 
-  // For known platforms always use the exact fixed column count — never try to auto-detect,
-  // because blank cells in the Excel header would cause the detector to stop too early.
+  // For known platforms default to the standard 7 fixed columns — but allow the admin to
+  // override this per-sheet (via Manage Columns) when the real Excel has a different number
+  // of fixed columns, e.g. extra/renamed roles that were previously misclassified as date columns.
   const activeDefaults=(platformFixedDefaults[platform]||defaultFixed);
-  let fixedCount=activeDefaults.length; // always 7 for Lazada/Shopee/TikTok
+  let fixedCount=(sheet.fixedColCount!=null&&sheet.fixedColCount>0)?sheet.fixedColCount:activeDefaults.length;
   const fixedLabels=[];
   for(let i=0;i<fixedCount;i++){
     const v=row0[i]!=null?String(row0[i]).trim():'';
@@ -7241,9 +7242,11 @@ function buildFRTable(trackerKey,sheetKey,sheet){
   +'</th>';
   // Sticky left offsets — shift by 36px for the checkbox col (present for all users)
   const _frCbOffset=36;
-  const stickyLefts=[0,80,160,270,400,550,680].map(function(v){return v+_frCbOffset;});
+  const COL_WIDTHS_DEFAULT=[80,80,110,130,150,130,130];
+  const COL_WIDTHS=Array.from({length:fixedCount},function(_,i){return COL_WIDTHS_DEFAULT[i]||130;});
+  const stickyLefts=[];
+  (function(){var acc=0;for(var i=0;i<fixedCount;i++){stickyLefts.push(acc+_frCbOffset);acc+=COL_WIDTHS[i];}})();
   const FREEZE_UP_TO=fixedCount-1; // freeze exactly Region→...→Team Lead (the fixed columns), nothing more
-  const COL_WIDTHS=[80,80,110,130,150,130,130];
   fixedLabels.forEach(function(l,i){
     const sl=stickyLefts[i]!==undefined?stickyLefts[i]:0;
     const minW=COL_WIDTHS[i]||80;
@@ -8411,11 +8414,11 @@ function frManageDates(key){
   const sheet=(t.sheets||{})[sheetKey]||{};
   const headerRows=sheet.headerRows||(sheet.row0?[sheet.row0]:[[]]); 
   const row0=headerRows[0]||[];
-  // Use the SAME fixed-column count as buildFRTable (always 7: Region, Platform, Account Status,
-  // Synagie Merchant ID, Brand/Store Name, Exec, Team Lead). Previously this used a separate
-  // regex-based guess that could disagree with the table, causing saved date-column edits to
-  // misalign with the table's column layout and appear to "revert" after refresh.
-  const fixedCount=7;
+  // Use the SAME fixed-column count as buildFRTable (default 7: Region, Platform, Account Status,
+  // Synagie Merchant ID, Brand/Store Name, Exec, Team Lead) — but this is now admin-adjustable per
+  // sheet (sheet.fixedColCount), so a mismatch between the table and this modal can't happen, and
+  // any column that's landed in the wrong "side" of the boundary can be pulled back into view.
+  const fixedCount=(sheet.fixedColCount!=null&&sheet.fixedColCount>0)?sheet.fixedColCount:7;
   const dateCols=[];
   for(let i=fixedCount;i<row0.length;i++){
     const colSubLabels=[];
@@ -8427,7 +8430,7 @@ function frManageDates(key){
     const isBlank=!dc.label&&!dc.subLabels.some(s=>s);
     return `
     <div style="background:${isBlank?'#fff7ed':'var(--bg)'};border:1px solid ${isBlank?'var(--orange)':'var(--border)'};border-radius:var(--radius);padding:8px 10px;margin-bottom:6px">
-      ${isBlank?'<div style="font-size:10px;font-weight:700;color:var(--orange);margin-bottom:4px">⚠ Blank column (no header text) — hidden from the table already. Click ✕ to remove it for good.</div>':''}
+      <div style="font-size:9px;color:var(--text4);margin-bottom:3px">Column index ${dc.idx}${isBlank?' — ⚠ blank/leftover, hidden from the table already. Click ✕ to remove it for good.':''}</div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
         <input class="finput nb" style="flex:1;font-size:12px;font-weight:600" value="${escHtml(dc.label)}" data-colidx="${dc.idx}" data-rowoffset="0" placeholder="Top label e.g. Income: 23 Dec - 29 Dec"/>
         <button onclick="this.closest('div.date-entry-wrap').remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 4px">✕</button>
@@ -8436,9 +8439,18 @@ function frManageDates(key){
     </div>`;
   }).join('').replace(/<div style="background/g,'<div class="date-entry-wrap" style="background');
   const subRowControls=Array.from({length:numSubRows},(_, ri)=>`<span style="font-size:11px;color:var(--text3)">Sub-row ${ri+1} label</span>`).join(' | ');
+  const fixedPreview=Array.from({length:fixedCount},function(_,i){return escHtml(String(row0[i]!=null?row0[i]:'')||'(blank)');}).join(' · ');
   document.getElementById('mlt-body').innerHTML=`
     <div style="margin-bottom:10px;font-size:13px;color:var(--text3)">
       Sheet: <b>${escHtml(sheetKey)}</b> — Edit date column headers. Each column can have a top label and sub-labels matching your Excel rows.
+    </div>
+    <div style="background:#f0f6ff;border:1px solid var(--blue-mid);border-radius:var(--radius);padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:4px">Fixed columns boundary</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:6px">Columns 0–${fixedCount-1} are treated as fixed (Region…Team Lead) and never show up below. If a column you expect to see/delete here is missing, it likely landed inside this range — lower the number and click Apply. Current: <b>${escHtml(fixedPreview)}</b></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" min="1" max="20" id="fr-fixedcount-input" value="${fixedCount}" class="finput nb" style="width:70px"/>
+        <button class="btn sm" onclick="frSetFixedCount('${key}','${sheetKey}')">Apply</button>
+      </div>
     </div>
     <div id="date-col-list">${dateList}</div>
     <button class="btn sm" onclick="frAddDateField(${numSubRows})" style="margin-bottom:14px">+ Add Date Column</button>
@@ -8465,13 +8477,24 @@ function frAddDateField(numSubRows){
   list.appendChild(div);
 }
 
+// Lets admin move the fixed/date-column boundary for a sheet — used when a column has landed on
+// the wrong side (e.g. a leftover "Exec"/"Team Lead" column that isn't showing up as deletable).
+async function frSetFixedCount(key,sheetKey){
+  const input=document.getElementById('fr-fixedcount-input');
+  const val=parseInt(input&&input.value);
+  if(!val||val<1){toast('Enter a valid number of fixed columns');return;}
+  await fbSet('trackers/'+key+'/sheets/'+sheetKey+'/fixedColCount',val);
+  toast('Fixed-column boundary updated to '+val);
+  frManageDates(key); // refresh the modal with the new boundary
+}
+
 async function frSaveDates(key,sheetKey,numSubRows){
   const t=D.trackers[key];if(!t)return;
   const sheet=(t.sheets||{})[sheetKey];if(!sheet)return;
   const ns=numSubRows||0;
   const existingHeaderRows=sheet.headerRows||(sheet.row0?[sheet.row0,sheet.row1].filter(Boolean):[[]]);
-  // Use the SAME fixed-column count as buildFRTable and frManageDates (always 7).
-  const fixedCount=7;
+  // Use the SAME fixed-column count as buildFRTable and frManageDates (admin-adjustable, default 7).
+  const fixedCount=(sheet.fixedColCount!=null&&sheet.fixedColCount>0)?sheet.fixedColCount:7;
   const existingRows=sheet.rows||[];
   const existingCwRowValues=sheet.cwRowValues||{};
   const existingFrTimestamps=sheet.frTimestamps||{};
