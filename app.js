@@ -7236,7 +7236,7 @@ function buildFRTable(trackerKey,sheetKey,sheet){
   // Sticky left offsets — shift by 36px for the checkbox col (present for all users)
   const _frCbOffset=36;
   const stickyLefts=[0,80,160,270,400,550,680].map(function(v){return v+_frCbOffset;});
-  const FREEZE_UP_TO=6; // Region→Platform→AcctStatus→MerchantID→Brand→Exec→TeamLead all sticky
+  const FREEZE_UP_TO=fixedCount-1; // freeze exactly Region→...→Team Lead (the fixed columns), nothing more
   const COL_WIDTHS=[80,80,110,130,150,130,130];
   fixedLabels.forEach(function(l,i){
     const sl=stickyLefts[i]!==undefined?stickyLefts[i]:0;
@@ -7533,7 +7533,9 @@ function buildFRTable(trackerKey,sheetKey,sheet){
   }).join('');
 
   // ── Footer: completion row ──
-  const totalFixedCols=fixedCount;
+  // +1 to account for the leading checkbox column (rowspan'd in the header) so the
+  // percentage cells line up under their correct date columns instead of being shifted left.
+  const totalFixedCols=fixedCount+1;
   let footerCells='<td colspan="'+totalFixedCols+'" style="padding:6px 10px;font-size:11px;font-weight:700;background:#f8fafc;border:1px solid var(--border);color:var(--text2)">Completion (Active only)</td>';
   dateColGroups.forEach(function(dc){
     const colRows=dataRows.filter(function(r){
@@ -7598,7 +7600,7 @@ function buildFRTable(trackerKey,sheetKey,sheet){
     +'<div id="'+frTblId+'" style="overflow:auto;flex:1;min-height:0;position:relative">'
       +'<table style="border-collapse:collapse;font-size:12px;min-width:100%;width:max-content">'
         +'<thead style="position:sticky;top:0;z-index:4">'+hdr+'</thead>'
-        +'<tbody>'+(bodyRows||'<tr><td colspan="'+(fixedCount+dateColGroups.length)+'" class="empty-state">No data rows found.</td></tr>')+'</tbody>'
+        +'<tbody>'+(bodyRows||'<tr><td colspan="'+(fixedCount+1+dateColGroups.length)+'" class="empty-state">No data rows found.</td></tr>')+'</tbody>'
         +'<tfoot><tr>'+footerCells+'</tr></tfoot>'
       +'</table>'
     +'</div>'
@@ -8403,13 +8405,11 @@ function frManageDates(key){
   const sheet=(t.sheets||{})[sheetKey]||{};
   const headerRows=sheet.headerRows||(sheet.row0?[sheet.row0]:[[]]); 
   const row0=headerRows[0]||[];
-  // Detect fixed cols
-  let fixedCount=7;
-  for(let ci=0;ci<row0.length;ci++){
-    const v=row0[ci]!=null?String(row0[ci]).trim():'';
-    if(!v||frParseDateHeader(v)||/income|order|report|sw\s*[-:]/i.test(v)||/\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(v)){if(ci>0){fixedCount=ci;break;}}
-    fixedCount=ci+1;
-  }
+  // Use the SAME fixed-column count as buildFRTable (always 7: Region, Platform, Account Status,
+  // Synagie Merchant ID, Brand/Store Name, Exec, Team Lead). Previously this used a separate
+  // regex-based guess that could disagree with the table, causing saved date-column edits to
+  // misalign with the table's column layout and appear to "revert" after refresh.
+  const fixedCount=7;
   const dateCols=[];
   for(let i=fixedCount;i<row0.length;i++){
     const colSubLabels=[];
@@ -8460,14 +8460,11 @@ async function frSaveDates(key,sheetKey,numSubRows){
   const sheet=(t.sheets||{})[sheetKey];if(!sheet)return;
   const ns=numSubRows||0;
   const existingHeaderRows=sheet.headerRows||(sheet.row0?[sheet.row0,sheet.row1].filter(Boolean):[[]]);
-  // Detect fixed cols
-  const row0base=existingHeaderRows[0]||[];
-  let fixedCount=7;
-  for(let ci=0;ci<row0base.length;ci++){
-    const v=row0base[ci]!=null?String(row0base[ci]).trim():'';
-    if(!v||frParseDateHeader(v)||/income|order|report|sw\s*[-:]/i.test(v)||/\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(v)){if(ci>0){fixedCount=ci;break;}}
-    fixedCount=ci+1;
-  }
+  // Use the SAME fixed-column count as buildFRTable and frManageDates (always 7).
+  const fixedCount=7;
+  const existingRows=sheet.rows||[];
+  const existingCwRowValues=sheet.cwRowValues||{};
+  const existingFrTimestamps=sheet.frTimestamps||{};
   // Rebuild headerRows: keep fixed portion, rebuild date portion from form
   const newHeaderRows=[];
   for(let ri=0;ri<=ns;ri++){
@@ -8476,10 +8473,17 @@ async function frSaveDates(key,sheetKey,numSubRows){
     while(base.length<fixedCount)base.push(null);
     newHeaderRows.push(base);
   }
-  // Collect date columns grouped by entry
+  // Collect date columns grouped by entry, in their current (post-delete/reorder) DOM order.
+  // Track each surviving entry's ORIGINAL column index so we can carry its row data, cwRowValues,
+  // and frTimestamps along with it — deleted columns are simply dropped instead of leaving stale
+  // data at the old indices (which made the table look unchanged after a "delete").
   const entries=document.querySelectorAll('#date-col-list .date-entry-wrap');
+  const keptOriginalIdx=[]; // parallel to the new date-column order; null = brand-new column
   entries.forEach(entry=>{
     const inputs=entry.querySelectorAll('input[data-rowoffset]');
+    const firstInput=inputs[0];
+    const origIdx=(firstInput&&firstInput.dataset.colidx!=='new')?parseInt(firstInput.dataset.colidx):null;
+    keptOriginalIdx.push(Number.isNaN(origIdx)?null:origIdx);
     inputs.forEach(inp=>{
       const ri=parseInt(inp.dataset.rowoffset)||0;
       const val=inp.value.trim();
@@ -8488,9 +8492,39 @@ async function frSaveDates(key,sheetKey,numSubRows){
       newHeaderRows[ri].push(val||null);
     });
   });
+  // Rebuild each data row: keep the fixed cells, then for each surviving date column pull the
+  // value from its ORIGINAL column index (brand-new columns start blank).
+  const newRows=existingRows.map(function(r){
+    const fixedPart=(r||[]).slice(0,fixedCount);
+    while(fixedPart.length<fixedCount)fixedPart.push(null);
+    const datePart=keptOriginalIdx.map(function(origIdx){
+      return (origIdx!=null&&(r||[])[origIdx]!=null)?r[origIdx]:null;
+    });
+    return fixedPart.concat(datePart);
+  });
+  // Remap cwRowValues (keyed by column index) to the new column positions
+  const newCwRowValues={};
+  keptOriginalIdx.forEach(function(origIdx,newPos){
+    if(origIdx==null)return;
+    const vals=existingCwRowValues[origIdx];
+    if(vals!=null)newCwRowValues[fixedCount+newPos]=vals;
+  });
+  // Remap frTimestamps (keyed "rowIdx_colIdx") to the new column positions
+  const newFrTimestamps={};
+  Object.keys(existingFrTimestamps).forEach(function(k){
+    const m=k.match(/^(\d+)_(\d+)$/);
+    if(!m)return;
+    const oldCi=parseInt(m[2]);
+    const newPos=keptOriginalIdx.indexOf(oldCi);
+    if(newPos===-1)return; // that column was deleted
+    newFrTimestamps[m[1]+'_'+(fixedCount+newPos)]=existingFrTimestamps[k];
+  });
   await fbSet('trackers/'+key+'/sheets/'+sheetKey+'/headerRows',newHeaderRows);
   await fbSet('trackers/'+key+'/sheets/'+sheetKey+'/row0',newHeaderRows[0]||[]);
-  if(newHeaderRows[1])await fbSet('trackers/'+key+'/sheets/'+sheetKey+'/row1',newHeaderRows[1]);
+  await fbSet('trackers/'+key+'/sheets/'+sheetKey+'/row1',newHeaderRows[1]||[]);
+  await fbSet('trackers/'+key+'/sheets/'+sheetKey+'/rows',newRows);
+  await fbSet('trackers/'+key+'/sheets/'+sheetKey+'/cwRowValues',newCwRowValues);
+  await fbSet('trackers/'+key+'/sheets/'+sheetKey+'/frTimestamps',newFrTimestamps);
   closeModal('modal-lt-upload');
   toast('Date columns saved!');
   renderLiveTrackers();
