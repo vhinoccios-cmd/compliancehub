@@ -172,11 +172,23 @@ function buildAOInlineRegions(date){
 }
 
 // Helper: find the correct [orderCol, productCol] indices for a specific date in an AO sheet.
+// Returns a stable, ever-increasing "week block" number for a given date, anchored to a
+// fixed Monday. Used so virtual (non-Excel-header) AO columns get a UNIQUE slot per calendar
+// week instead of being reused every week — previously virtual columns were computed from
+// weekday-position only (Mon=0...Fri=4) with no notion of *which* week, so week 2's Monday
+// column was the exact same Firebase storage slot as week 1's Monday column, and any old
+// value typed there would silently reappear as if it were new/blank-cell data. Do not change
+// the anchor date below — it only has to be *a* Monday, not any particular one.
+const AO_WEEK_EPOCH_MS=new Date('2026-06-29T00:00:00').getTime();
+function aoWeekBlock(dateStr){
+  const d=new Date(dateStr+'T00:00:00').getTime();
+  return Math.floor(Math.round((d-AO_WEEK_EPOCH_MS)/86400000)/7);
+}
 // Handles three cases:
 //   1. Excel has a header for this exact date → use that column pair
-//   2. Excel has NO headers at all → virtual fallback: maxCol + weekdayOffset*2
+//   2. Excel has NO headers at all → virtual fallback: maxCol + weekBlock*10 + weekdayOffset*2
 //   3. Excel has PARTIAL headers (some days covered, this day missing) → same virtual fallback
-// This must exactly mirror buildAOTable's virtual column index: maxCol + wi*2
+// This must exactly mirror buildAOTable's virtual column index: maxCol + aoWeekBlock(date)*10 + wi*2
 // where wi = day's position in Mon-Fri week (Mon=0 ... Fri=4).
 function aoFindDateCols(row0, date, row1){
   // Try to find a matching Excel header first
@@ -199,7 +211,8 @@ function aoFindDateCols(row0, date, row1){
   const dowToWi={1:0,2:1,3:2,4:3,5:4}; // Mon=0...Fri=4
   const wi=dowToWi[dow];
   if(wi===undefined)return[]; // weekend — no AO data
-  return[maxCol+wi*2, maxCol+wi*2+1];
+  const vci=maxCol+aoWeekBlock(date)*10+wi*2;
+  return[vci, vci+1];
 }
 
 // ── AO Row Ownership (CDM / Team Lead access control) ──
@@ -2420,7 +2433,7 @@ function renderMembers(){
           <span style="font-size:11px;font-weight:700;color:${m.active!==false?'var(--green)':'var(--text4)'}">${m.active!==false?'Active':'Inactive'}</span>
         </label>
       </td>
-      <td style="white-space:nowrap"><button class="btn sm edit" onclick="editMember('${m.username}')" style="margin-right:3px">Edit</button><button class="btn sm del" onclick="removeM('${m.username}')">Remove</button></td>
+      <td style="white-space:nowrap"><button class="btn sm edit" onclick="editMember('${m.username}')" style="margin-right:3px">Edit</button><button class="btn sm" onclick="resetMemberPassword('${m.username}')" style="margin-right:3px;background:var(--blue-light);color:var(--blue);border-color:var(--blue-mid)">🔑 Reset Password</button><button class="btn sm del" onclick="removeM('${m.username}')">Remove</button></td>
     </tr>`).join('');
   });
 
@@ -2523,6 +2536,40 @@ async function removeM(username){
   const mems=await fbGet('members')||{};
   for(const[k,m]of Object.entries(mems)){if(m.username===username){await fbDel(`members/${k}`);break;}}
   toast('Member removed');
+}
+// Admin: dedicated quick-action to reset a member's login password, separate from the full
+// Edit Member form so it's a one-click, low-friction action from the Members table.
+function resetMemberPassword(username){
+  if(!CU.isAdmin){toast('Admin only.');return;}
+  const m=D.members.find(x=>x.username===username);if(!m)return;
+  document.getElementById('mt-title').textContent='Reset Password';
+  document.getElementById('mt-body').innerHTML=`
+    <div style="font-size:13px;color:var(--text3);margin-bottom:12px">Set a new password for <b>${escHtml(m.name)}</b> <span style="color:var(--text4)">(@${escHtml(m.username)})</span>.</div>
+    <div class="fg"><label class="flabel">New Password</label><input class="finput nb" id="rp-pass" type="password" placeholder="Enter new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')document.getElementById('rp-pass2').focus()"/></div>
+    <div class="fg"><label class="flabel">Confirm New Password</label><input class="finput nb" id="rp-pass2" type="password" placeholder="Re-enter new password" autocomplete="new-password" onkeydown="if(event.key==='Enter')saveMemberPasswordReset('${username}')"/></div>
+    <div class="msg err" id="rp-err" style="display:none"></div>
+    <div class="form-actions"><button class="btn primary" onclick="saveMemberPasswordReset('${username}')">Reset Password</button><button class="btn" onclick="closeModal('modal-task')">Cancel</button></div>`;
+  openModal('modal-task');
+  setTimeout(()=>document.getElementById('rp-pass')?.focus(),50);
+}
+async function saveMemberPasswordReset(username){
+  const errEl=document.getElementById('rp-err');
+  const showErr=msg=>{if(errEl){errEl.textContent=msg;errEl.style.display='block';}else toast(msg);};
+  const p1=document.getElementById('rp-pass')?.value||'';
+  const p2=document.getElementById('rp-pass2')?.value||'';
+  if(!p1||p1.length<4){showErr('Password must be at least 4 characters.');return;}
+  if(p1!==p2){showErr('Passwords do not match.');return;}
+  const mems=await fbGet('members')||{};
+  for(const[k,m]of Object.entries(mems)){
+    if(m.username===username){
+      await fbUpd(`members/${k}`,{password:p1});
+      await logAct(0,ds(now()),CU.name,'Password reset for: '+(m.name||username),'PASSWORD_RESET');
+      toast('Password reset for '+(m.name||username)+'.');
+      closeModal('modal-task');
+      return;
+    }
+  }
+  showErr('Member not found.');
 }
 function downloadMemberTemplate(){
   const headers=['Name','Username','Password','Role','ReportsTo(username)','Region','WorkingHours'];
@@ -5726,26 +5773,9 @@ async function aoSetSelectedToZero(trackerKey,sheetKey){
   const nowT=now(),todayStr=ds(nowT);
   const dowToday=nowT.getDay();
   if(dowToday===0||dowToday===6){toast('No editable column today (weekend).');return;}
-  const row0=sheet.row0||[];
-  const maxCol=row0.length;
-  // Only target TODAY's Order/Product column pair — never the rest of the week.
-  // (Previously this wiped Mon-Fri in one click, which silently overwrote other days'
-  // real entries and made them look like a single bulk/auto update.)
-  let editableCols=[];
-  for(let ci=4;ci<maxCol;ci+=2){
-    const h0=row0[ci]!=null?String(row0[ci]):'';
-    const dp=h0.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if(dp){
-      const colDateStr=dp[3]+'-'+dp[1].padStart(2,'0')+'-'+dp[2].padStart(2,'0');
-      if(colDateStr===todayStr){editableCols=[ci,ci+1];break;}
-    }
-  }
-  // Virtual-column fallback: same index logic as buildAOTable / ltUpdateCell
-  if(!editableCols.length){
-    const vBase=Math.max(maxCol,4);
-    const offsets={1:0,2:2,3:4,4:6,5:8};
-    if(offsets[dowToday]!==undefined){editableCols=[vBase+offsets[dowToday],vBase+offsets[dowToday]+1];}
-  }
+  // Use the shared helper (same week-block-aware formula as everywhere else) instead of a
+  // separate copy of this logic, so the two can never drift out of sync again.
+  let editableCols=aoFindTodayCols(sheet);
   if(!editableCols.length){toast('No editable column found for today.');return;}
   const ts=ltStamp();
   const path='trackers/'+trackerKey+'/sheets/'+sheetKey;
@@ -5785,9 +5815,11 @@ function aoFindTodayCols(sheet){
     }
   }
   const vBase=Math.max(maxCol,4);
-  const offsets={1:0,2:2,3:4,4:6,5:8};
-  if(offsets[dowToday]!==undefined)return[vBase+offsets[dowToday],vBase+offsets[dowToday]+1];
-  return[];
+  const dowToWi={1:0,2:1,3:2,4:3,5:4};
+  const wi=dowToWi[dowToday];
+  if(wi===undefined)return[];
+  const vci=vBase+aoWeekBlock(todayStr)*10+wi*2;
+  return[vci,vci+1];
 }
 // Admin: blank out (not zero) today's Order/Product cells for selected brands — useful for
 // testing whether the "filled" state correctly reverts to truly empty.
@@ -5933,8 +5965,8 @@ function buildAOTable(trackerKey,sheetKey,sheet){
       const isToday2=wDate===todayStr;
       const isPast2=wDate<todayStr;
       const isFuture2=wDate>todayStr;
-      // Use col indices beyond existing data
-      const vci=maxCol+wi*2;
+      // Use col indices beyond existing data, unique per calendar week (see aoWeekBlock)
+      const vci=maxCol+aoWeekBlock(wDate)*10+wi*2;
       dateCols.push({ci:vci,h0:displayDate,h1a:'Order',h1b:'Product',
         isToday:isToday2,isPast:isPast2,isFuture:isFuture2,
         isCurrentWeek:true,colDateStr:wDate,virtual:true});
@@ -5950,8 +5982,8 @@ function buildAOTable(trackerKey,sheetKey,sheet){
       const isToday2=wDate===todayStr;
       const isPast2=wDate<todayStr;
       const isFuture2=wDate>todayStr;
-      // Virtual column index mirrors ltUpdateCell: maxCol + weekday-position*2
-      const vci=maxCol+wi*2;
+      // Virtual column index mirrors ltUpdateCell/aoFindDateCols: maxCol + weekBlock*10 + weekday-position*2
+      const vci=maxCol+aoWeekBlock(wDate)*10+wi*2;
       dateCols.push({ci:vci,h0:displayDate,h1a:'Order',h1b:'Product',
         isToday:isToday2,isPast:isPast2,isFuture:isFuture2,
         isCurrentWeek:true,colDateStr:wDate,virtual:true});
@@ -6313,9 +6345,12 @@ async function ltUpdateCell(trackerKey,sheetKey,ri,ci,val){
         const mo=String(row0[i]).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
         if(mo&&(i===ci||i+1===ci)){return mo[3]+'-'+mo[1].padStart(2,'0')+'-'+mo[2].padStart(2,'0');}
       }
-      // Virtual column: reverse-engineer the date from column index
+      // Virtual column: reverse-engineer the date from column index. All virtual columns
+      // ever rendered belong to the CURRENT week (there is no week navigation), so we can
+      // reverse using this week's block directly.
       const maxCol=Math.max(row0.length,4);
-      const wi=Math.floor((ci-maxCol)/2); // Mon=0...Fri=4
+      const block=aoWeekBlock(ds(now()));
+      const wi=Math.floor((ci-maxCol-block*10)/2); // Mon=0...Fri=4
       if(wi>=0&&wi<=4){
         const nowT=now();
         const mon=new Date(nowT);
